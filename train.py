@@ -264,22 +264,31 @@ def _train(args: TrainArgs, exit_stack: ExitStack):
                     model.end_of_text_padding_id,
                 },
             )
-            audio_loss = compute_loss_with_mask(
-                output.logits,
-                codes[:, model.audio_offset : model.audio_offset + model.dep_q],
-                output.mask,
-                mode="audio",
-                first_codebook_weight_multiplier=args.first_codebook_weight_multiplier,
-            )
 
-            mb_loss = text_loss + audio_loss
+            # Only compute audio loss if model has depformer (dep_q > 0)
+            # STT models have dep_q = 0 and don't generate audio
+            if model.dep_q > 0:
+                audio_loss = compute_loss_with_mask(
+                    output.logits,
+                    codes[:, model.audio_offset : model.audio_offset + model.dep_q],
+                    output.mask,
+                    mode="audio",
+                    first_codebook_weight_multiplier=args.first_codebook_weight_multiplier,
+                )
+                mb_loss = text_loss + audio_loss
+                n_batch_tokens += output.text_mask.numel() + output.mask.numel()
+                n_real_tokens += (
+                    torch.sum(output.text_mask).item() + torch.sum(output.mask).item()
+                )
+            else:
+                # STT model: only text loss, no audio generation
+                mb_loss = text_loss
+                n_batch_tokens += output.text_mask.numel()
+                n_real_tokens += torch.sum(output.text_mask).item()
+
             mb_loss.backward()
 
             loss += mb_loss.detach()
-            n_batch_tokens += output.text_mask.numel() + output.mask.numel()
-            n_real_tokens += (
-                torch.sum(output.text_mask).item() + torch.sum(output.mask).item()
-            )
 
             if i < args.num_microbatches - 1:
                 # synchronize CUDA to re-run backward

@@ -31,6 +31,12 @@ share/python-wheels/
 MANIFEST
 .pip-cache/
 
+# Output files
+output/
+
+# Note: datasets/ is NOT ignored - we need to sync recordings across machines
+# Only ignore raw/ folder since processed/ is what we train on
+datasets/*/raw/
 
 # Jupyter Notebook
 .ipynb_checkpoints

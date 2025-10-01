@@ -1,0 +1,67 @@
+# STT Fine-tuning Configuration for Number Transcription
+# This config trains the model to transcribe numbers as words (one, two, three)
+# to prevent VAD cut-off issues when speaking digit sequences
+
+# Data configuration
+data:
+  train_data: 'datasets/numbers_training/train.jsonl'
+  eval_data: ''  # No evaluation dataset for now
+  shuffle: true
+
+# Model configuration - IMPORTANT: Use STT model, not full Moshi
+moshi_paths:
+  hf_repo_id: "kyutai/stt-1b-en_fr"
+
+# Fine-tuning method: LoRA (Low-Rank Adaptation)
+full_finetuning: false
+lora:
+  enable: true
+  rank: 128
+  scaling: 2.
+  ft_embed: true  # Fine-tune embeddings for better number transcription learning
+
+# Loss weights (audio loss won't be used for STT models)
+first_codebook_weight_multiplier: 100.
+text_padding_weight: 0.5
+
+# Training hyperparameters
+duration_sec: 30          # Max sequence length in seconds (most samples are <10s)
+batch_size: 8             # Reduced from 16 for smaller dataset
+max_steps: 500            # Total training steps (adjust based on results)
+gradient_checkpointing: true
+
+# Optimizer settings
+optim:
+  lr: 2.0e-05             # Learning rate (higher than default for faster adaptation)
+  weight_decay: 0.1
+  pct_start: 0.05         # Warmup percentage
+
+# Monitoring and checkpointing
+seed: 0
+log_freq: 10              # Log metrics every 10 steps
+eval_freq: 100            # Not used (no eval set)
+do_eval: false            # Disabled for now
+do_ckpt: true
+ckpt_freq: 100            # Save checkpoint every 100 steps
+num_ckpt_keep: 3          # Keep last 3 checkpoints
+
+# Output
+save_adapters: true       # Save only LoRA adapters (not full merged model)
+run_dir: "./output/stt_numbers_finetune"
+overwrite_run_dir: false  # Set to true if you want to overwrite existing runs
+
+# Microbatching (leave as default)
+num_microbatches: 1
+
+# Mixed precision training
+param_dtype: "bfloat16"
+
+# Gradient clipping
+max_norm: 1.0
+
+# Optional: Weights & Biases logging (uncomment to enable)
+# wandb:
+#   project: "moshi-stt-numbers"
+#   run_name: "stt-numbers-v1"
+#   key: ""  # Your W&B API key
+#   offline: false

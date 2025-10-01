@@ -225,7 +225,7 @@ def main():
     parser.add_argument("--partition", default="", help="Which partition to use.")
     parser.add_argument(
         "--whisper_model",
-        default="medium",
+        default="whisper-large-v3-turbo",
         help="Which whisper to use, use medium for stereo!",
     )
     parser.add_argument(
