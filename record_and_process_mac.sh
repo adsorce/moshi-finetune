@@ -61,11 +61,23 @@ check_dependencies() {
 # Function to display the script for a sample number
 show_script() {
     local sample_num=$1
+    local script_content
 
-    echo -e "${YELLOW}Sample Script:${NC}"
-    # Use word boundaries to match exact sample number only
-    grep -A 1 "^**Sample ${sample_num}:\*\*$" "${SCRIPT_FILE}" 2>/dev/null || echo "Check RECORDING_SCRIPT.md for sample ${sample_num}"
+    echo -e "${YELLOW}Sample ${sample_num} Script:${NC}"
+    # Use literal match to avoid regex escaping issues in markdown headers
+    if script_content=$(grep -F -A 1 "**Sample ${sample_num}:**" "${SCRIPT_FILE}" 2>/dev/null); then
+        printf '%s\n' "${script_content}" | sed -e '/^--$/d' -e 's/^/    /'
+    else
+        echo "    Check RECORDING_SCRIPT.md for sample ${sample_num}"
+    fi
     echo ""
+}
+
+# Function to clear the terminal between recordings for readability
+clear_screen_for_sample() {
+    if [ -t 1 ]; then
+        printf '\033[2J\033[H'
+    fi
 }
 
 # Function to record a single sample
@@ -84,19 +96,27 @@ record_sample() {
         fi
     fi
 
-    # Show the script
-    show_script $sample_num
+    clear_screen_for_sample
+
+    echo -e "${BLUE}========================================${NC}"
+    echo -e "${BLUE}  Recording Sample ${sample_num}${NC}"
+    echo -e "${BLUE}========================================${NC}"
+    echo ""
 
     echo -e "${GREEN}Ready to record Sample ${sample_num}${NC}"
     echo "Press ENTER to start recording..."
     read dummy </dev/tty
 
-    echo -e "${RED}RECORDING... Press ENTER to stop early${NC}"
+    echo -e "${RED}Now recording... Press ENTER to stop early${NC}"
     echo "(Recording auto-stops after ${RECORD_DURATION} seconds)"
+    echo ""
 
     # Start recording in the background so we can stop immediately when the user is done.
     rec --clobber -r ${INPUT_SAMPLE_RATE} -c ${INPUT_CHANNELS} -b ${INPUT_BIT_DEPTH} "${raw_file}" trim 0 ${RECORD_DURATION} >/dev/null 2>&1 &
     local rec_pid=$!
+
+    # Show the script beneath the recording status so it's easy to read while recording.
+    show_script $sample_num
 
     # Stop the recorder if the script receives Ctrl+C.
     trap 'kill -INT ${rec_pid} 2>/dev/null || true' INT
