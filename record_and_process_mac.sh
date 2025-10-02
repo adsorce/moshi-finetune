@@ -246,7 +246,7 @@ main_menu() {
         echo ""
         echo "1. Record single sample"
         echo "2. Record batch (multiple samples)"
-        echo "3. Record all 50 samples (interactive)"
+        echo "3. Record all 200 samples (interactive)"
         echo "4. Create dataset index (train.jsonl)"
         echo "5. Run Whisper transcription"
         echo "6. Show dataset status"
@@ -256,24 +256,24 @@ main_menu() {
 
         case $choice in
             1)
-                read -p "Enter sample number (1-50): " num
-                if [ $num -ge 1 ] && [ $num -le 50 ]; then
+                read -p "Enter sample number (1-200): " num
+                if [ $num -ge 1 ] && [ $num -le 200 ]; then
                     record_sample $num
                 else
-                    echo -e "${RED}Invalid sample number${NC}"
+                    echo -e "${RED}Invalid sample number (must be 1-200)${NC}"
                 fi
                 ;;
             2)
                 read -p "Enter start number: " start
                 read -p "Enter end number: " end
-                if [ $start -ge 1 ] && [ $end -le 50 ] && [ $start -le $end ]; then
+                if [ $start -ge 1 ] && [ $end -le 200 ] && [ $start -le $end ]; then
                     record_batch $start $end
                 else
-                    echo -e "${RED}Invalid range${NC}"
+                    echo -e "${RED}Invalid range (must be 1-200)${NC}"
                 fi
                 ;;
             3)
-                record_batch 1 50
+                record_batch 1 200
                 ;;
             4)
                 create_index
